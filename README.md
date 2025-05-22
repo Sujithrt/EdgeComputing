@@ -1,29 +1,48 @@
 # Edge Computing using AWS IoT Services
 
-This project brings real‑time face detection to your AWS IoT Greengrass V2 core. It subscribes to a local MQTT topic, decodes incoming Base64 images, runs MTCNN on the device, and dispatches the results into Amazon SQS for downstream processing.
+This project repository offers two ways to do face detection at scale:
+
+1. **Serverless (Cloud)**  
+   • Containerized AWS Lambda (from ECR) behind a Function URL or API Gateway  
+   • Incoming Base64 images trigger MTCNN inference in Lambda  
+   • Results enqueued in Amazon SQS for downstream processing  
+
+2. **On‑Device (Greengrass V2)**  
+   • Lightweight Python component on your Greengrass Core  
+   • Local MQTT subscription + Greengrass IPC for secure pub/sub  
+   • MTCNN runs on CPU; outputs sent to SQS without ever leaving the edge  
 
 ## Key Technologies
 
-- **AWS IoT Greengrass V2**: Edge deployment and secure IPC.  
-- **Python 3**: Component implementation.  
-- **facenet‑pytorch (MTCNN)**: Lightweight on‑edge face detector.  
-- **Pillow**: Image decoding and formatting.  
-- **Boto3**: Integrates with Amazon SQS.  
-- **Greengrass IPC**: Local publish/subscribe without cloud credentials.  
-- **Amazon SQS**: Decoupled, reliable message queue.
+- **AWS IoT Greengrass V2** (edge deployment & IPC)  
+- **AWS Lambda & ECR** (cloud‑native containers)  
+- **Python 3** with **facenet‑pytorch (MTCNN)** and **Pillow**  
+- **Greengrass IPC & MQTT** for local messaging  
+- **boto3** + **Amazon SQS** for reliable queuing  
 
-## Processing Flow
+## Processing Flow (Edge Mode)
 
-1. **Listen** on a configured MQTT topic (e.g. `clients/<ThingName>`).  
-2. **Receive** JSON payloads containing:  
-   - `encoded`: Base64‑encoded image  
-   - `request_id`: unique identifier  
-   - `filename`: original image name  
-3. **Decode** and convert to a PIL image.  
-4. **Run MTCNN** to find a face crop.  
-5. **Publish** outcome to SQS:  
-   - If a face is found, normalize and re‑encode the crop, then send `{ request_id, filename, face: <Base64‑JPEG> }` to the “request” queue.  
-   - If no face is detected, send `{ request_id, filename, result: "No‑Face" }` to the “response” queue.
+1. Subscribe to a configured MQTT topic (e.g. `clients/<ThingName>`).  
+2. Receive JSON payloads with:
+   - `encoded`: Base64‑JPEG/PNG  
+   - `request_id`: unique ID  
+   - `filename`: original name  
+3. Decode to a PIL image and run MTCNN.  
+4. If a face is found, normalize, re‑encode as Base64‑JPEG, and send  
+   ```json
+   { "request_id": "...", "filename": "...", "face": "<Base64‑JPEG>" }
+   ```
+   to the “request” SQS queue.
+5. If no face is detected, send
+   ```
+   { "request_id": "...", "filename": "...", "result": "No‑Face" }
+   ```
+   to the “response” SQS queue.
 
 ## System Architecture
-![image](https://github.com/user-attachments/assets/cf20d484-cce4-4b72-9d94-56fb583addf1)
+### Edge Computing
+![image](https://github.com/user-attachments/assets/89e304ee-1629-436e-b629-c3a2c416f070)
+
+### Serverless
+![image](https://github.com/user-attachments/assets/231a01a6-efc7-4687-b3bb-f7e0f5a60aad)
+
