@@ -1,0 +1,44 @@
+{
+  "RecipeFormatVersion": "2020-01-25",
+  "ComponentConfiguration": {
+    "DefaultConfiguration": {
+      "accessControl": {
+        "aws.greengrass.ipc.pubsub": {
+          "com.clientdevices.FaceDetection:pubsub:1": {
+            "operations": [
+              "aws.greengrass#SubscribeToTopic",
+              "aws.greengrass#PublishToTopic"
+            ],
+            "policyDescription": "Allow subscribe to client topic",
+            "resources": [
+              "clients/1229592821-IoTThing"
+            ]
+          }
+        }
+      },
+      "mqttTopic": "clients/1229581862-IoTThing",
+      "requestQueue": "https://sqs.us-east-1.amazonaws.com/891377310409/1229581862-req-queue",
+      "responseQueue": "https://sqs.us-east-1.amazonaws.com/891377310409/1229581862-resp-queue",
+      "awsRegion": "us-east-1"
+    }
+  },
+  "ComponentDependencies": {
+    "aws.greengrass.TokenExchangeService": {
+      "DependencyType": "HARD",
+      "VersionRequirement": "^2.0.0"
+    }
+  },
+  "ComponentDescription": "Edge face detection via MTCNN",
+  "ComponentName": "com.clientdevices.FaceDetection",
+  "ComponentPublisher": "Sujith",
+  "ComponentVersion": "1.0.0",
+  "Manifests": [
+    {
+      "Platform": { "os": "linux" },
+      "Lifecycle": {
+        "install": "python3 -m pip install --no-cache-dir --user awsiotsdk boto3 Pillow numpy==1.24.4 torch==1.9.1+cpu torchvision==0.10.1+cpu torchaudio==0.9.1 --extra-index-url https://download.pytorch.org/whl/cpu",
+        "run": "python3 -u {artifacts:path}/fd_component.py {configuration:/mqttTopic} {configuration:/requestQueue} {configuration:/responseQueue} {configuration:/awsRegion}"
+      }
+    }
+  ]
+}

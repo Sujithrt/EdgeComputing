@@ -1,0 +1,6 @@
+boto3
+facenet_pytorch
+awslambdaric
+requests
+Pillow
+opencv-python
